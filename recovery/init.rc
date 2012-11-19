@@ -1,0 +1,107 @@
+#custom init (c) Rob Shannon (Lloir)
+
+on early-init
+    start ueventd
+
+on post-fs-data
+   mkdir /data/media 0770 media_rw media_rw
+   chown media_rw media_rw /data/media
+
+
+on init
+    export PATH /sbin:/system/sbin:/system/bin
+    export ANDROID_ROOT /system
+    export ANDROID_DATA /data
+    export EXTERNAL_STORAGE /sdcard
+
+    symlink /system/etc /etc
+
+    mkdir /sdcard
+    mkdir /internal_sdcard
+    mkdir /system
+    mkdir /boot
+    mkdir /datadata
+    mkdir /emmc
+    mkdir /data
+    mkdir /cache
+    mount /tmp /tmp tmpfs
+
+on boot
+
+    ifup lo
+    hostname localhost
+    domainname localdomain
+
+    class_start default
+
+service ueventd /sbin/ueventd
+    critical
+
+service recovery /sbin/recovery
+
+service adbd /sbin/adbd recovery
+    disabled
+
+# Always start adbd on userdebug and eng builds
+# In recovery, always run adbd as root.
+on property:ro.debuggable=1
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 18D1
+    write /sys/class/android_usb/android0/idProduct D001
+    write /sys/class/android_usb/android0/functions adb
+    #write /sys/class/android_usb/android0/enable 1
+    write /sys/class/android_usb/android0/iManufacturer $ro.product.manufacturer
+    write /sys/class/android_usb/android0/iProduct $ro.product.model
+    write /sys/class/android_usb/android0/iSerial $ro.serialno
+    #start adbd
+    setprop service.adb.root 1
+
+# Restart adbd so it can run as root
+on property:service.adb.root=1
+    write /sys/class/android_usb/android0/enable 0
+    restart adbd
+    write /sys/class/android_usb/android0/enable 1
+    
+on property:persist.service.zcharge.enable=1
+# backlight
+    write /sys/class/backlight/tegra-pwm-bl/brightness 0
+    
+# Power management settings
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor userspace
+    write /sys/module/cpu_tegra3/parameters/no_lp 0
+    write /sys/devices/system/cpu/cpu1/online 0
+    write /sys/devices/system/cpu/cpu2/online 0
+    write /sys/devices/system/cpu/cpu3/online 0
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed 340000
+    write /sys/devices/system/cpu/cpufreq/interactive/boost_factor 2
+    write /sys/devices/system/cpu/cpufreq/interactive/sustain_load 80
+    write /sys/module/cpu_tegra3/parameters/auto_hotplug 0
+    write /sys/module/cpuidle/parameters/lp2_in_idle 1
+
+service choice_fn /sbin/choice_fn
+    oneshot
+
+service power_test /sbin/power_test
+    disabled
+    oneshot
+
+service offmode_charging /sbin/offmode_charging
+    disabled
+    oneshot
+
+service detect_key /sbin/detect_key
+    disabled
+    oneshot
+
+service htcbatt /sbin/htcbatt
+    oneshot
+
+    on property:persist.service.recy_log.enable=1
+# mount internal sdcard partition
+    mount vfat /dev/block/platform/sdhci-tegra.3/by-name/ISD /sdcard wait noatime
+
+on property:mount_system=1
+    mount ext4 /dev/block/platform/sdhci-tegra.3/by-name/APP /system wait ro
+
+on property:shell_ready=1
+    exec /system/bin/sh /init.qcom.firmware_links.sh /firmware/mdm/image /firmware "*.mbn *.img"
