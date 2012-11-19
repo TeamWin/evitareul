@@ -85,13 +85,14 @@ BOARD_HAS_LARGE_FILESYSTEM := true
 BOARD_VOLD_MAX_PARTITIONS := 20
 BOARD_VOLD_EMMC_SHARES_DEV_MAJOR := true
 TARGET_USE_CUSTOM_LUN_FILE_PATH := /sys/class/android_usb/android0/f_mass_storage/lun0/file
+TARGET_USE_CUSTOM_LUN_FILE_PATH := /sys/class/android_usb/android0/f_mass_storage/lun%d/file
 
 #CWM Recovery UNCOMMENT TO USE CWM
 #TARGET_RECOVERY_INITRC := device/htc/evitareul/recovery/init.rc
 #BOARD_USES_MMCUTILS := true
 #BOARD_HAS_NO_MISC_PARTITION := false
-#BOARD_UMS_LUNFILE := "/sys/devices/platform/fsl-tegra-udc/gadget/lun0/file"
-#TARGET_PREBUILT_RECOVERY_KERNEL := device/htc/evitareul/prebuilt/recovery_kernel
+#BOARD_UMS_LUNFILE := "/sys/class/android_usb/android0/f_mass_storage/lun0/file"
+#TARGET_PREBUILT_RECOVERY_KERNEL := device/htc/evitareul/prebuilt/kernel
 
 # TWRP Configurations comment these out to use CWM
 DEVICE_RESOLUTION := 720x1280
